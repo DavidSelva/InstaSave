@@ -4,7 +4,7 @@ import 'package:instasave/mainfragment/home_fragment.dart';
 import 'package:instasave/utils/PrefUtils.dart';
 
 void main() async {
-  await PrefUtils.init();
+   PrefUtils.init();
   runApp(const MyApp());
 }
 

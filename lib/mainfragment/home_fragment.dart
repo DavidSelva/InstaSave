@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:instasave/utils/PrefUtils.dart';
 import 'package:instasave/utils/constants.dart';
+import 'package:instasave/widgets/primary_button.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class HomeFragment extends StatefulWidget {
@@ -24,6 +25,7 @@ class _HomeState extends State<HomeFragment> {
           Container(
             margin: EdgeInsets.symmetric(vertical: 0, horizontal: 10),
             child: TextField(
+              maxLines: 1,
               decoration: InputDecoration(labelText: "Enter Url"),
               controller: _urlController,
             ),
@@ -33,32 +35,26 @@ class _HomeState extends State<HomeFragment> {
             mainAxisAlignment: MainAxisAlignment.start,
             mainAxisSize: MainAxisSize.max,
             children: <Widget>[
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
-                child: MaterialButton(
-                    onPressed: onPressed,
-                    textColor: Colors.white,
-                    child: Text("How To?"),
-                    color: Colors.lightBlue),
+                child: PrimaryButton(
+                  text: "How To?",
+                  onPressed: onPressed,
+                ),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
-                  child: MaterialButton(
+                  child: PrimaryButton(
+                text: "Download",
                 onPressed: onDownloadPressed,
-                textColor: Colors.white,
-                child: Text("Download"),
-                color: Colors.lightBlue,
               )),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
-                  child: MaterialButton(
+                  child: PrimaryButton(
+                text: "Paste",
                 onPressed: onPressed,
-                textColor: Colors.white,
-                child: Text("Paste"
-                    ""),
-                color: Colors.lightBlue,
               )),
-              SizedBox(width: 10)
+              const SizedBox(width: 10)
             ],
           )
         ],
@@ -70,12 +66,13 @@ class _HomeState extends State<HomeFragment> {
 
   void onDownloadPressed() {
     _validUrl = checkUrl(_urlController.text);
-    if (checkUrl(_urlController.text)) {
+    if (_validUrl) {
       checkStoragePermission(_urlController.text);
     }
   }
 
   bool checkUrl(String text) {
+    text = "https://www.instagram.com/p/C4ddoser7C1/?hl=en";
     if (text.isEmpty) {
       Fluttertoast.showToast(msg: "Enter Url");
       return false;

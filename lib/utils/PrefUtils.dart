@@ -3,7 +3,7 @@ import 'dart:async' show Future;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrefUtils {
-  static SharedPreferences _prefsInstance;
+  static late SharedPreferences _prefsInstance;
   static String? USER_ID = null;
 
   // call this method from iniState() function of mainApp().
