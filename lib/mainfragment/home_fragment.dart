@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:instasave/utils/PrefUtils.dart';
@@ -89,17 +92,44 @@ class _HomeState extends State<HomeFragment> {
   }
 
   Future<void> checkStoragePermission(String url) async {
-    if (await Permission.storage.isGranted) {
-      if (PrefUtils.getString(PrefUtils.USER_ID ?? "", "").isNotEmpty) {
-      } else {}
-    } else {
-      final result = await Permission.storage.request();
-      if (result.isGranted) {
-        // Permission is granted
-      } else if (result.isDenied) {
-        // Permission is denied
-      } else if (result.isPermanentlyDenied) {
-        // Permission is permanently denied
+    if (Platform.isAndroid) {
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      if (androidInfo.version.sdkInt <= 32) {
+        if (await Permission.storage.isGranted) {
+          if (PrefUtils.getString(PrefUtils.USER_ID ?? "", "").isNotEmpty) {
+          } else {}
+        } else {
+          final result = await Permission.photos.request();
+          if (result.isGranted) {
+            final result = await Permission.videos.request();
+            if (result.isGranted) {
+            } else if (result.isDenied) {
+              // Permission is denied
+            } else if (result.isPermanentlyDenied) {
+              // Permission is permanently denied
+            }
+          } else if (result.isDenied) {
+            // Permission is denied
+          } else if (result.isPermanentlyDenied) {
+            // Permission is permanently denied
+          }
+        }
+      } else {
+        if (await Permission.photos.isGranted &&
+            await Permission.videos.isGranted) {
+          if (PrefUtils.getString(PrefUtils.USER_ID ?? "", "").isNotEmpty) {
+          } else {}
+        } else {
+          final result = await Permission.storage.request();
+          if (result.isGranted) {
+            // Permission is granted
+          } else if (result.isDenied) {
+            // Permission is denied
+          } else if (result.isPermanentlyDenied) {
+            // Permission is permanently denied
+          }
+        }
       }
     }
   }
