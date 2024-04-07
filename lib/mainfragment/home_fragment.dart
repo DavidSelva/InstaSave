@@ -1,12 +1,10 @@
-import 'dart:io';
+import 'dart:math';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:instasave/utils/PrefUtils.dart';
+import 'package:instasave/mainfragment/webview_fragment.dart';
 import 'package:instasave/utils/constants.dart';
 import 'package:instasave/widgets/primary_button.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 class HomeFragment extends StatefulWidget {
   const HomeFragment({super.key});
@@ -70,7 +68,9 @@ class _HomeState extends State<HomeFragment> {
   void onDownloadPressed() {
     _validUrl = checkUrl(_urlController.text);
     if (_validUrl) {
-      checkStoragePermission(_urlController.text);
+      // checkStoragePermission(_urlController.text);
+      // validateUrl(_urlController.text);
+      validateUrl("https://www.instagram.com/p/C4ddoser7C1/?hl=en");
     }
   }
 
@@ -91,46 +91,26 @@ class _HomeState extends State<HomeFragment> {
     return false;
   }
 
-  Future<void> checkStoragePermission(String url) async {
-    if (Platform.isAndroid) {
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-      final AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-      if (androidInfo.version.sdkInt <= 32) {
-        if (await Permission.storage.isGranted) {
-          if (PrefUtils.getString(PrefUtils.USER_ID ?? "", "").isNotEmpty) {
-          } else {}
-        } else {
-          final result = await Permission.photos.request();
-          if (result.isGranted) {
-            final result = await Permission.videos.request();
-            if (result.isGranted) {
-            } else if (result.isDenied) {
-              // Permission is denied
-            } else if (result.isPermanentlyDenied) {
-              // Permission is permanently denied
-            }
-          } else if (result.isDenied) {
-            // Permission is denied
-          } else if (result.isPermanentlyDenied) {
-            // Permission is permanently denied
-          }
-        }
-      } else {
-        if (await Permission.photos.isGranted &&
-            await Permission.videos.isGranted) {
-          if (PrefUtils.getString(PrefUtils.USER_ID ?? "", "").isNotEmpty) {
-          } else {}
-        } else {
-          final result = await Permission.storage.request();
-          if (result.isGranted) {
-            // Permission is granted
-          } else if (result.isDenied) {
-            // Permission is denied
-          } else if (result.isPermanentlyDenied) {
-            // Permission is permanently denied
-          }
-        }
-      }
+  Future<void> checkStoragePermission(String url) async {}
+
+  void validateUrl(String postUrl) {
+    String replacedUrl = "";
+    if (postUrl.contains("?utm_source=ig_web_copy_link")) {
+      String partToRemove = "?utm_source=ig_web_copy_link";
+      replacedUrl = postUrl.replaceAll(partToRemove, "");
+    } else if (postUrl.contains("?utm_source=ig_web_button_share_sheet")) {
+      String partToRemove = "?utm_source=ig_web_button_share_sheet";
+      replacedUrl = postUrl.replaceAll(partToRemove, "");
+    } else if (postUrl.contains("?utm_medium=share_sheet")) {
+      String partToRemove = "?utm_medium=share_sheet";
+      replacedUrl = postUrl.replaceAll(partToRemove, "");
+    } else if (postUrl.contains("?utm_medium=copy_link")) {
+      String partToRemove = "?utm_medium=copy_link";
+      replacedUrl = postUrl.replaceAll(partToRemove, "");
+    } else {
+      replacedUrl = postUrl;
     }
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => WebViewFragment(url: replacedUrl)));
   }
 }
