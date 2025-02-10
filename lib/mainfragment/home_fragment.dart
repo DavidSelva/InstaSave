@@ -1,9 +1,9 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_login_facebook/flutter_login_facebook.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:instasave/mainfragment/webview_fragment.dart';
 import 'package:instasave/utils/constants.dart';
+import 'package:instasave/utils/logger_utils.dart';
+import 'package:instasave/utils/pref_utils.dart';
 import 'package:instasave/widgets/primary_button.dart';
 
 class HomeFragment extends StatefulWidget {
@@ -16,6 +16,13 @@ class HomeFragment extends StatefulWidget {
 class _HomeState extends State<HomeFragment> {
   final _urlController = TextEditingController();
   bool _validUrl = false;
+  final plugin = FacebookLogin(debug: true);
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,11 +86,11 @@ class _HomeState extends State<HomeFragment> {
     if (text.isEmpty) {
       Fluttertoast.showToast(msg: "Enter Url");
       return false;
-    } else if (RegExp(FEEDS_PATTERN).hasMatch(text)) {
+    } else if (RegExp(APIConstants.FEEDS_PATTERN).hasMatch(text)) {
       return true;
-    } else if (RegExp(REELS_PATTERN).hasMatch(text)) {
+    } else if (RegExp(APIConstants.REELS_PATTERN).hasMatch(text)) {
       return true;
-    } else if (RegExp(IG_TV_PATTERN).hasMatch(text)) {
+    } else if (RegExp(APIConstants.IG_TV_PATTERN).hasMatch(text)) {
       return true;
     } else {
       Fluttertoast.showToast(msg: "Invalid URl");
@@ -110,7 +117,34 @@ class _HomeState extends State<HomeFragment> {
     } else {
       replacedUrl = postUrl;
     }
-    Navigator.of(context).push(MaterialPageRoute(
-        builder: (context) => WebViewFragment(url: replacedUrl)));
+    if (PrefUtils.getString(PrefUtils.PREF_KEY_USER_ID, "").isEmpty) {
+      facebookLogin();
+    }
+    /*showDialog(
+        context: context,
+        builder: (context) => WebViewFragment(postUrl: postUrl));*/
+  }
+
+  void facebookLogin() async {
+    await plugin.logIn(permissions: [
+      FacebookPermission.publicProfile,
+      FacebookPermission.email,
+    ]);
+    await _updateLoginInfo();
+  }
+
+  Future<void> _updateLoginInfo() async {
+    final token = await plugin.accessToken;
+    FacebookUserProfile? profile;
+    String? email;
+
+    if (token != null) {
+      profile = await plugin.getUserProfile();
+      if (token.permissions.contains(FacebookPermission.email.name)) {
+        email = await plugin.getUserEmail();
+      }
+    }
+    LoggerUtils.logger.d("_updateLoginInfo: $token");
+    LoggerUtils.logger.d("_updateLoginInfo: $email");
   }
 }

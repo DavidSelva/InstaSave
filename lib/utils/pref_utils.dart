@@ -4,7 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class PrefUtils {
   static late SharedPreferences _prefsInstance;
-  static String? USER_ID = null;
+  static String PREF_KEY_USER_ID = "user_id";
+  static String PREF_KEY_USER_NAME = "user_name";
+  static String PREF_KEY_COOKIES = "cookies";
+  static String PREF_KEY_ACCESS_TOKEN = "access_token";
 
   // call this method from iniState() function of mainApp().
   static Future<SharedPreferences> init() async {
@@ -16,7 +19,15 @@ class PrefUtils {
     return _prefsInstance.getString(key) ?? defValue ?? "";
   }
 
-  static Future<bool> setString(String key, String value) async {
+  static Future<bool> saveString(String key, String value) async {
+    return _prefsInstance.setString(key, value) ?? Future.value(false);
+  }
+
+  static String getHashMap(String key, String defValue) {
+    return _prefsInstance.getString(key) ?? defValue ?? "";
+  }
+
+  static Future<bool> saveHashMap(String key, String value) async {
     return _prefsInstance.setString(key, value) ?? Future.value(false);
   }
 

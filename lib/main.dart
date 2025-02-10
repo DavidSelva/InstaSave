@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:instasave/controller/get_web_view_controller.dart';
 import 'package:instasave/mainfragment/downloads_fragment.dart';
 import 'package:instasave/mainfragment/home_fragment.dart';
-import 'package:instasave/utils/PrefUtils.dart';
+import 'package:instasave/utils/pref_utils.dart';
+import 'package:get/get.dart';
 
 void main() async {
-   PrefUtils.init();
   runApp(const MyApp());
 }
 
@@ -67,6 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // TODO: implement initState
     super.initState();
     _pageViewController = PageController();
+    PrefUtils.init();
   }
 
   @override
