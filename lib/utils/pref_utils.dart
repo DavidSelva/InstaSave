@@ -1,4 +1,5 @@
 import 'dart:async' show Future;
+import 'dart:ffi';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,6 +9,7 @@ class PrefUtils {
   static String PREF_KEY_USER_NAME = "user_name";
   static String PREF_KEY_COOKIES = "cookies";
   static String PREF_KEY_ACCESS_TOKEN = "access_token";
+  static String PREF_KEY_ACCESS_TOKEN_EXPIRY = "access_token_expiry_date";
 
   // call this method from iniState() function of mainApp().
   static Future<SharedPreferences> init() async {
@@ -21,6 +23,10 @@ class PrefUtils {
 
   static Future<bool> saveString(String key, String value) async {
     return _prefsInstance.setString(key, value) ?? Future.value(false);
+  }
+
+  static Future<bool> saveDouble(String key, double value) async {
+    return _prefsInstance.setDouble(key, value);
   }
 
   static String getHashMap(String key, String defValue) {

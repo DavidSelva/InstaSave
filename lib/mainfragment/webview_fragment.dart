@@ -2,9 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:get/state_manager.dart';
 import 'package:instasave/utils/constants.dart';
 import 'package:instasave/utils/instagram_api.dart';
 import 'package:instasave/utils/logger_utils.dart';
@@ -14,8 +12,10 @@ import '../utils/pref_utils.dart';
 
 class WebViewFragment extends StatefulWidget {
   final String postUrl;
+  final Function accessTokenCallback;
 
-  const WebViewFragment({super.key, required this.postUrl});
+  const WebViewFragment(
+      {super.key, required this.postUrl, required this.accessTokenCallback});
 
   @override
   State<WebViewFragment> createState() => _WebViewFragmentState();
@@ -23,19 +23,21 @@ class WebViewFragment extends StatefulWidget {
 
 class _WebViewFragmentState extends State<WebViewFragment> {
   late final WebViewController controller;
-  late final CookieManager _cookieManager = CookieManager.instance();
+
+  // late final CookieManager _cookieManager = CookieManager.instance();
 
   @override
   void initState() {
-    if (PrefUtils.getString(PrefUtils.PREF_KEY_USER_ID, "").isEmpty) {
+    if (PrefUtils.getString(PrefUtils.PREF_KEY_ACCESS_TOKEN, "").isEmpty) {
       controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..clearCache()
         ..setNavigationDelegate(NavigationDelegate(
             onProgress: (int progress) {},
             onPageFinished: (String pageUrl) async {
               LoggerUtils.logger.d("initState: $pageUrl");
-              WebUri uri = WebUri(pageUrl);
+
+              /** Cookies*/
+              /*WebUri uri = WebUri(pageUrl);
               List<Cookie> cookies = await _cookieManager.getCookies(url: uri);
               final HashMap<String, String> hashMap = HashMap();
               for (var cookie in cookies) {
@@ -44,9 +46,17 @@ class _WebViewFragmentState extends State<WebViewFragment> {
                 hashMap.addIf(false, cookie.name, cookie.value);
               }
               PrefUtils.saveString(
-                  PrefUtils.PREF_KEY_COOKIES, json.encode(hashMap));
-              LoggerUtils.logger.d("initState: ${uri.queryParameters}");
-              for (var key in uri.queryParameters.keys) {
+                  PrefUtils.PREF_KEY_COOKIES, json.encode(hashMap));*/
+
+              Uri uri = Uri.parse(pageUrl);
+              if (uri.queryParameters.containsKey("code")) {
+                LoggerUtils.logger
+                    .d("initStateCode: ${uri.queryParameters["code"]}");
+                widget.accessTokenCallback(uri.queryParameters["code"]);
+                /*getAccessTokenFromCode(
+                    uri.queryParameters["code"].toString()));*/
+              }
+              /*for (var key in uri.queryParameters.keys) {
                 if (key.contains("code")) {
                   getAccessTokenFromCode(
                       uri.queryParameters["code"].toString());
@@ -58,13 +68,13 @@ class _WebViewFragmentState extends State<WebViewFragment> {
                   getAccessTokenFromCode(code);
                   break;
                 }
-              }
+              }*/
             },
             onHttpError: (HttpResponseError error) {
               LoggerUtils.logger
                   .e("HttpResponseError: " + (error.response.toString()));
             }))
-        ..loadRequest(Uri.parse(InstagramAPI.getRequestUrl()));
+        ..loadRequest(Uri.parse(InstagramAPI.getAuthRequestUrl()));
     } else {
       controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -92,7 +102,7 @@ class _WebViewFragmentState extends State<WebViewFragment> {
 
   void getAccessTokenFromCode(String code) {
     Map<String, String> params = HashMap<String, String>();
-    params["client_id"] = APIConstants.CLIENT_ID;
+    params["client_id"] = APIConstants.INSTA_CLIENT_ID;
     params["client_secret"] = APIConstants.CLIENT_SECRET;
     params["grant_type"] = "authorization_code";
     params["redirect_uri"] = APIConstants.REDIRECT_URL;
