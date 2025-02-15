@@ -4,6 +4,8 @@ class APIConstants {
   static const String IG_TV_PATTERN = "https://www.instagram.com/tv/";
   static const String BASE_URL = "https://api.instagram.com/";
   static const String USER_INFO_GRAPH_URL = "https://graph.instagram.com/";
+  static const String FACEBOOK_USER_INFO_GRAPH_URL = "https://graph.facebook.com/";
+  static const String FACEBOOK_URL_PATH = "v22.0/me/";
   static const String CALLBACK_URL = "https://instagram.com/";
   static const String GET_USER_INFO_URL =
       "https://api.instagram.com/v1/users/self/?access_token=";
@@ -17,8 +19,12 @@ class APIConstants {
   static const String INTERSTITIAL_AD_ID = "/6499/example/interstitial";
   static const String VIDEO_AD_ID = "ca-app-pub-3940256099942544/5224354917";
   static const String NATIVE_AD_ID = "ca-app-pub-3940256099942544/2247696110";
-  static const String CLIENT_ID = "1002105907675796";
-  static const String CLIENT_SECRET = "f728286d736e708d477979d53a3e22b6";
+
+  static const String CLIENT_ID = "1162493512068517";
+  static const String CLIENT_SECRET = "4fca8ea24eb69829846d759b0d246a7c";
+  static const String INSTA_APP_SECRET = "13d3849c09812ef4e25896c552983c4c";
+  static const String INSTA_APP_ID = "1341022297244755";
+  static const String INSTA_ACCESS_TOKEN = "IGAAQhSBzXLaVBZAE1vYzZA4UU1Gb2JMUGJ1R3ZAfRlZAvYTRnZAk1HeXJhTmY1YXp2V3B5dGZAtZAGZAMelpKTUtncDE5TFZA4REhGYnJLSDQ3OENBX29KSXdmTEU5N045YjVVb1o2OG90cWhQbmlJNXpJdWczQkE1MGwtZAW5DNU5ZAYl95TQZDZD";
 }
 
 class Constants {

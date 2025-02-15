@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_login_facebook/flutter_login_facebook.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:instasave/utils/constants.dart';
+import 'package:instasave/utils/instagram_api.dart';
 import 'package:instasave/utils/logger_utils.dart';
 import 'package:instasave/utils/pref_utils.dart';
 import 'package:instasave/widgets/primary_button.dart';
@@ -117,34 +118,49 @@ class _HomeState extends State<HomeFragment> {
     } else {
       replacedUrl = postUrl;
     }
-    if (PrefUtils.getString(PrefUtils.PREF_KEY_USER_ID, "").isEmpty) {
-      facebookLogin();
+    String feedGraphUrl = InstagramAPI.getFeedGraphUrl(replacedUrl);
+    if (PrefUtils.getString(PrefUtils.PREF_KEY_ACCESS_TOKEN, "").isEmpty) {
+      facebookLogin(feedGraphUrl);
+    } else {
+      getFeedInfo(PrefUtils.getString(PrefUtils.PREF_KEY_ACCESS_TOKEN, ""), feedGraphUrl);
     }
     /*showDialog(
         context: context,
         builder: (context) => WebViewFragment(postUrl: postUrl));*/
   }
 
-  void facebookLogin() async {
+  void facebookLogin(String feedGraphUrl) async {
     await plugin.logIn(permissions: [
       FacebookPermission.publicProfile,
       FacebookPermission.email,
+      FacebookPermission.instagramBasic,
     ]);
-    await _updateLoginInfo();
+    await _updateLoginInfo(feedGraphUrl);
   }
 
-  Future<void> _updateLoginInfo() async {
+  Future<void> _updateLoginInfo(String feedGraphUrl) async {
     final token = await plugin.accessToken;
     FacebookUserProfile? profile;
     String? email;
 
     if (token != null) {
+      PrefUtils.saveString(
+          PrefUtils.PREF_KEY_ACCESS_TOKEN, token.token.toString());
       profile = await plugin.getUserProfile();
       if (token.permissions.contains(FacebookPermission.email.name)) {
         email = await plugin.getUserEmail();
       }
+      getFeedInfo(token.token.toString(), feedGraphUrl);
     }
-    LoggerUtils.logger.d("_updateLoginInfo: $token");
-    LoggerUtils.logger.d("_updateLoginInfo: $email");
+    // LoggerUtils.logger.d("_updateLoginInfo: ${token?.authenticationToken.toString()}");
+    // LoggerUtils.logger.d("_updateLoginInfo: ${token?.token.toString()}");
+    // LoggerUtils.logger.d("_updateLoginInfo: $email");
   }
+}
+
+void getFeedInfo(String token, String feedUrl) {
+  /*InstagramAPI.getDownloadInfo(token?.token, feedGraphUrl,
+        userInfoCallback: (response, position, type) {});*/
+  InstagramAPI.getUserInfoUsingToken(token.toString(),
+      userInfoCallback: (response, position, type) {});
 }
