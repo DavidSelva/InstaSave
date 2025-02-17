@@ -6,6 +6,7 @@ import 'package:instasave/utils/pref_utils.dart';
 import 'package:get/get.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 

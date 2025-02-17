@@ -1,10 +1,10 @@
 import 'dart:async' show Future;
-import 'dart:ffi';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PrefUtils {
   static late SharedPreferences _prefsInstance;
+  static String PREF_KEY_ID = "id";
   static String PREF_KEY_USER_ID = "user_id";
   static String PREF_KEY_USER_NAME = "user_name";
   static String PREF_KEY_COOKIES = "cookies";
@@ -27,6 +27,10 @@ class PrefUtils {
 
   static Future<bool> saveDouble(String key, double value) async {
     return _prefsInstance.setDouble(key, value);
+  }
+
+  static double getDouble(String key, double value) {
+    return _prefsInstance.getDouble(key) ?? value;
   }
 
   static String getHashMap(String key, String defValue) {

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_login_facebook/flutter_login_facebook.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:insta_login/insta_login.dart';
 import 'package:instasave/mainfragment/webview_fragment.dart';
 import 'package:instasave/utils/constants.dart';
 import 'package:instasave/utils/instagram_api.dart';
+import 'package:instasave/utils/logger_utils.dart';
 import 'package:instasave/utils/pref_utils.dart';
 import 'package:instasave/widgets/primary_button.dart';
 
@@ -121,76 +121,76 @@ class _HomeState extends State<HomeFragment> {
     }
     String feedGraphUrl = InstagramAPI.getFeedGraphUrl(replacedUrl);
     if (PrefUtils.getString(PrefUtils.PREF_KEY_ACCESS_TOKEN, "").isEmpty) {
-      // instaLogin(feedGraphUrl);
-      showDialog(
-          context: context,
-          builder: (context) => WebViewFragment(
-              postUrl: postUrl,
-              accessTokenCallback: (code) async {
-                Map<String, dynamic> shortToken = await Instaservices()
-                    .getTokenAndUserID(
-                        appid: APIConstants.INSTA_APP_ID,
-                        redirectUrl: APIConstants.REDIRECT_URL,
-                        code: code,
-                        appSecret: APIConstants.INSTA_APP_SECRET);
-                Navigator.pop(context);
-                /** Store Short Live Token*/
-                PrefUtils.saveString(
-                    PrefUtils.PREF_KEY_ACCESS_TOKEN, shortToken["access_token"]);
-                PrefUtils.saveString(
-                    PrefUtils.PREF_KEY_USER_ID, shortToken["user_id"]);
-                /*PrefUtils.saveDouble(
-                    PrefUtils.PREF_KEY_ACCESS_TOKEN_EXPIRY, shortToken["expires_in"]);*/
-                InstagramAPI.getInstaUserName(
-                    accesstoken: shortToken["access_token"], accessTokenCallback: (userMap) async {});
-
-                /** Get Long Live Token*/
-                // getLongLiveToken(shortToken);
-              }));
+      instaLogin(feedGraphUrl);
     } else {
-      InstagramAPI.getInstaUserName(
-          accesstoken: PrefUtils.getString(PrefUtils.PREF_KEY_ACCESS_TOKEN, ""), accessTokenCallback: (userMap) async {});
-    }
-  }
-
-  void instaLogin(String feedGraphUrl) async {
-    String loginResponse = await InstagramAPI.getAuthorization();
-    if (loginResponse.isNotEmpty) {
-      // Instaservices().getTokenAndUserID(appid: APIConstants.INSTA_APP_ID, redirectUrl: APIConstants.REDIRECT_URL, code: code, appSecret: appSecret)
-    }
-  }
-
-  Future<void> _updateLoginInfo(String feedGraphUrl) async {
-    final token = await plugin.accessToken;
-    FacebookUserProfile? profile;
-    String? email;
-
-    if (token != null) {
-      PrefUtils.saveString(
-          PrefUtils.PREF_KEY_ACCESS_TOKEN, token.token.toString());
-      profile = await plugin.getUserProfile();
-      if (token.permissions.contains(FacebookPermission.email.name)) {
-        email = await plugin.getUserEmail();
+      if (checkTokenExpiry()) {
+        getFeedInfo(PrefUtils.getString(PrefUtils.PREF_KEY_ACCESS_TOKEN, ""),
+            feedGraphUrl);
+      } else {
+        PrefUtils.saveString(PrefUtils.PREF_KEY_ACCESS_TOKEN, "");
+        PrefUtils.saveDouble(PrefUtils.PREF_KEY_ACCESS_TOKEN_EXPIRY, 0);
+        PrefUtils.saveString(PrefUtils.PREF_KEY_USER_ID, "");
+        PrefUtils.saveString(PrefUtils.PREF_KEY_USER_NAME, "");
+        PrefUtils.saveString(PrefUtils.PREF_KEY_ID, "");
+        PrefUtils.saveString(PrefUtils.PREF_KEY_COOKIES, "");
+        instaLogin(feedGraphUrl);
       }
-      getFeedInfo(token.token.toString(), feedGraphUrl);
     }
-    // LoggerUtils.logger.d("_updateLoginInfo: ${token?.authenticationToken.toString()}");
-    // LoggerUtils.logger.d("_updateLoginInfo: ${token?.token.toString()}");
-    // LoggerUtils.logger.d("_updateLoginInfo: $email");
   }
 
-  void getLongLiveToken(Map<String, dynamic> shortToken) {
+  void instaLogin(String feedGraphUrl) {
+    showDialog(
+        context: context,
+        builder: (context) => WebViewFragment(
+            postUrl: feedGraphUrl,
+            accessTokenCallback: (code) async {
+              Map<String, dynamic> shortToken =
+                  await InstagramAPI.getTokenAndUserID(code: code);
+              Navigator.pop(context);
+              /** Store Short Live Token*/
+              /*PrefUtils.saveString(
+                  PrefUtils.PREF_KEY_ACCESS_TOKEN, shortToken["access_token"]);
+              PrefUtils.saveString(
+                  PrefUtils.PREF_KEY_USER_ID, shortToken["user_id"]);
+              getInstaUserID(feedGraphUrl, shortToken["access_token"]);*/
+              /*PrefUtils.saveDouble(
+                    PrefUtils.PREF_KEY_ACCESS_TOKEN_EXPIRY, shortToken["expires_in"]);*/
+              /** Get Long Live Token*/
+              getLongLiveToken(feedGraphUrl, shortToken);
+            }));
+  }
+
+  void getLongLiveToken(String feedGraphUrl, Map<String, dynamic> shortToken) {
     InstagramAPI.getLongLiveToken(shortToken,
-        accessTokenCallback: (longToken) async {
-      InstagramAPI.getInstaUserName(
-          accesstoken: longToken, accessTokenCallback: (userMap) async {});
+        accessTokenCallback: (statusCode, longToken) async {
+      if(statusCode == 200) {
+        getInstaUserID(feedGraphUrl, longToken);
+      } else {
+        Fluttertoast.showToast(msg: "getLongLiveToken Error");
+      }
+    });
+  }
+
+  void getInstaUserID(String feedGraphUrl, String accessToken) {
+    InstagramAPI.getInstaUserID(accessToken,
+        accessTokenCallback: (responseCode, userMap) async {
+      if (responseCode == 200) {
+        getFeedInfo(accessToken, feedGraphUrl);
+      } else {
+        instaLogin(feedGraphUrl);
+      }
     });
   }
 }
 
-void getFeedInfo(String token, String feedUrl) {
-  /*InstagramAPI.getDownloadInfo(token?.token, feedGraphUrl,
-        userInfoCallback: (response, position, type) {});*/
-  InstagramAPI.getUserInfoUsingToken(token.toString(),
-      userInfoCallback: (response, position, type) {});
+bool checkTokenExpiry() {
+  LoggerUtils.logger.d(
+      "checkTokenExpiry: ${PrefUtils.getDouble(PrefUtils.PREF_KEY_ACCESS_TOKEN_EXPIRY, 0)}, ${DateTime.now().millisecondsSinceEpoch}");
+  return PrefUtils.getDouble(PrefUtils.PREF_KEY_ACCESS_TOKEN_EXPIRY, 0) >
+      DateTime.now().millisecondsSinceEpoch;
+}
+
+void getFeedInfo(String accessToken, String feedGraphUrl) async {
+  Map<String, dynamic> responseMap =
+      await InstagramAPI.getDownloadInfo(accessToken, feedGraphUrl);
 }
