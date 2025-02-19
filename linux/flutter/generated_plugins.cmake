@@ -3,7 +3,6 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  insta_login
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
