@@ -21,6 +21,7 @@ class InstagramAPI {
     buffer.write(APIConstants.REDIRECT_URL);
     buffer.write("&scope=instagram_business_basic");
     buffer.write("&response_type=code");
+    buffer.write("&hl=en");
     LoggerUtils.logger.d("getAuthRequestUrl: $buffer");
     return buffer.toString();
   }

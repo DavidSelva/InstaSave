@@ -2,11 +2,11 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:instasave/utils/constants.dart';
 import 'package:instasave/utils/instagram_api.dart';
 import 'package:instasave/utils/logger_utils.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 import '../utils/pref_utils.dart';
 
@@ -22,14 +22,65 @@ class WebViewFragment extends StatefulWidget {
 }
 
 class _WebViewFragmentState extends State<WebViewFragment> {
-  late final InAppWebViewController? controller;
+  late final WebViewController controller;
 
-  late final CookieManager _cookieManager = CookieManager.instance();
+  // late final CookieManager _cookieManager = CookieManager.instance();
 
   @override
   void initState() {
+    if (PrefUtils.getString(PrefUtils.PREF_KEY_ACCESS_TOKEN, "").isEmpty) {
+      controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setNavigationDelegate(NavigationDelegate(
+            onProgress: (int progress) {},
+            onPageFinished: (String pageUrl) async {
+              LoggerUtils.logger.d("initState: $pageUrl");
+
+              /** Cookies*/
+              /*WebUri uri = WebUri(pageUrl);
+              List<Cookie> cookies = await _cookieManager.getCookies(url: uri);
+              final HashMap<String, String> hashMap = HashMap();
+              for (var cookie in cookies) {
+                // LoggerUtils.logger
+                //     .d("WebViewController:cookies: ${cookie.name} : ${cookie.value}");
+                hashMap.addIf(false, cookie.name, cookie.value);
+              }
+              PrefUtils.saveString(
+                  PrefUtils.PREF_KEY_COOKIES, json.encode(hashMap));*/
+
+              Uri uri = Uri.parse(pageUrl);
+              if (uri.queryParameters.containsKey("code")) {
+                LoggerUtils.logger
+                    .d("initStateCode: ${uri.queryParameters["code"]}");
+                widget.accessTokenCallback(uri.queryParameters["code"]);
+                /*getAccessTokenFromCode(
+                    uri.queryParameters["code"].toString()));*/
+              }
+              /*for (var key in uri.queryParameters.keys) {
+                if (key.contains("code")) {
+                  getAccessTokenFromCode(
+                      uri.queryParameters["code"].toString());
+                  break;
+                } else if (key.contains("u")) {
+                  Uri redirectUri =
+                      Uri.parse(uri.queryParameters["u"].toString());
+                  String code = redirectUri.queryParameters["code"].toString();
+                  getAccessTokenFromCode(code);
+                  break;
+                }
+              }*/
+            },
+            onHttpError: (HttpResponseError error) {
+              LoggerUtils.logger
+                  .e("HttpResponseError: " + (error.response.toString()));
+            }))
+        ..loadRequest(Uri.parse(InstagramAPI.getAuthRequestUrl()));
+    } else {
+      controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..loadRequest(Uri.parse(widget.postUrl));
+    }
     super.initState();
-    _cookieManager.deleteAllCookies();
   }
 
   @override
@@ -44,61 +95,7 @@ class _WebViewFragmentState extends State<WebViewFragment> {
                 alignment: Alignment.topRight,
                 onPressed: () => Navigator.of(context).pop(),
                 icon: const Icon(Icons.close)),
-            Expanded(
-                child: InAppWebView(
-              initialUrlRequest: URLRequest(url: WebUri("https://google.com/")),
-              /* onRenderProcessUnresponsive: (controller, uri) async {
-                return WebViewRenderProcessAction.TERMINATE;
-              },*/
-              onPermissionRequest: (controller, request) async {
-                return PermissionResponse(
-                    resources: request.resources,
-                    action: PermissionResponseAction.GRANT);
-              },
-              initialSettings: InAppWebViewSettings(
-                  javaScriptEnabled: false,
-                  iframeAllowFullscreen: true,
-                  userAgent:
-                      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-                  useHybridComposition: true,
-                  useWideViewPort: false,
-                  supportMultipleWindows: true,
-                  preferredContentMode: UserPreferredContentMode.DESKTOP),
-              onWebViewCreated: (InAppWebViewController webViewController) {
-                controller = webViewController;
-                controller?.loadUrl(
-                    urlRequest: URLRequest(
-                        allowsCellularAccess: true,
-                        allowsConstrainedNetworkAccess: true,
-                        cachePolicy:
-                            URLRequestCachePolicy.RETURN_CACHE_DATA_ELSE_LOAD,
-                        url: WebUri(
-                            InstagramAPI.getAuthRequestUrl().toString())));
-              },
-              shouldOverrideUrlLoading: (controller, navigationAction) async {
-                var uri = navigationAction.request.url!;
-
-                if (![
-                  "http",
-                  "https",
-                  "file",
-                  "chrome",
-                  "data",
-                  "javascript",
-                  "about"
-                ].contains(uri.scheme)) {}
-
-                return NavigationActionPolicy.ALLOW;
-              },
-              onLoadStop: (controller, pageUrl) async {
-                Uri uri = Uri.parse(pageUrl.toString());
-                if (uri.queryParameters.containsKey("code")) {
-                  widget.accessTokenCallback(uri.queryParameters["code"]);
-                  /*getAccessTokenFromCode(
-                    uri.queryParameters["code"].toString()));*/
-                }
-              },
-            ))
+            Expanded(child: WebViewWidget(controller: controller))
           ],
         ));
   }
@@ -114,15 +111,15 @@ class _WebViewFragmentState extends State<WebViewFragment> {
 
     InstagramAPI.getAccessTokenFromCode(context, params,
         accessTokenCallback: (response, position, type) async {
-      if (position == 0 && response != null) {
-        HashMap<String, dynamic> jsonObject = json.decode(response);
-        if (jsonObject.containsKey("access_token")) {
-          onTokenReceived(jsonObject["user_id"], jsonObject["access_token"]);
-        }
-      } else {
-        Fluttertoast.showToast(msg: "Login error!");
-      }
-    });
+          if (position == 0 && response != null) {
+            HashMap<String, dynamic> jsonObject = json.decode(response);
+            if (jsonObject.containsKey("access_token")) {
+              onTokenReceived(jsonObject["user_id"], jsonObject["access_token"]);
+            }
+          } else {
+            Fluttertoast.showToast(msg: "Login error!");
+          }
+        });
   }
 
   void onTokenReceived(String userId, String authToken) {
@@ -135,21 +132,21 @@ class _WebViewFragmentState extends State<WebViewFragment> {
   void getUserInfoByAccessToken(String userId, String authToken) {
     InstagramAPI.getUserInfo(userId, authToken,
         userInfoCallback: (response, position, type) {
-      if (position == 0) {
-        if (response != null) {
-          HashMap<String, dynamic> jsonMap = json.decode(response);
-          try {
-            if (jsonMap.containsKey("id")) {
-              PrefUtils.saveString(PrefUtils.PREF_KEY_USER_ID, jsonMap["id"]);
-              PrefUtils.saveString(
-                  PrefUtils.PREF_KEY_USER_NAME, jsonMap["username"]);
-              Fluttertoast.showToast(msg: jsonMap["username"]);
+          if (position == 0) {
+            if (response != null) {
+              HashMap<String, dynamic> jsonMap = json.decode(response);
+              try {
+                if (jsonMap.containsKey("id")) {
+                  PrefUtils.saveString(PrefUtils.PREF_KEY_USER_ID, jsonMap["id"]);
+                  PrefUtils.saveString(
+                      PrefUtils.PREF_KEY_USER_NAME, jsonMap["username"]);
+                  Fluttertoast.showToast(msg: jsonMap["username"]);
+                }
+              } catch (error) {}
+            } else {
+              Fluttertoast.showToast(msg: "Login error!");
             }
-          } catch (error) {}
-        } else {
-          Fluttertoast.showToast(msg: "Login error!");
-        }
-      }
-    });
+          }
+        });
   }
 }
